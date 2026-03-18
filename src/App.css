@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant red (&:where(.active-red, .active-red *));
+@custom-variant blue (&:where(.active-blue, .active-blue *));
+@custom-variant green (&:where(.active-green, .active-green *));
+@custom-variant picture (&:where(.picture, .picture *));
+@custom-variant scaleImage-4 (&:where(.scaleImage-4, .scaleImage-4 *));
+@custom-variant scaleImage-5 (&:where(.scaleImage-5, .scaleImage-5 *));
+@custom-variant scaleImage-6 (&:where(.scaleImage-6, .scaleImage-6 *));
+
+@source inline("grid-cols-4 grid-cols-5 grid-cols-6 grid-rows-4 grid-rows-5 grid-rows-6");
+
+@theme {
+    /* --color-bg-red: #110000; */
+    /* --color-bg-blue: #000011; */
+    --color-t-dark: #151515;
+    --color-t-light: #e3e3e3;
+    --color-t-dark-backdrop: rgba(21, 21, 21, 0.75);
+    --color-t-dark-red: #600;
+    --color-t-dark-blue: #006;
+    --color-t-dark-green: #060;
+    --color-t-dark-killer: #000;
+    --color-t-dark-neutral: #764;
+    --color-t-light-red: #f11;
+    --color-t-light-blue: #13f;
+    --color-t-light-green: #2f2;
+    --color-t-light-killer: #222;
+    --color-t-light-neutral: #f9f9b6;
+    --color-t-picture-neutral: #f9f9f9;
+    --color-t-disabled: #888;
+
+    --text-tiny: 0.625rem;
+
+    --font-main: "Lato";
+    --font-halloween: "Nosifer", "Lato", sans-serif;
+    --font-xmas: "Berkshire Swash", "Lato", sans-serif;
+
+    --text-shadow-t-light: 0 0 20px white;
+    --text-shadow-t-dark: 0 0 20px black;
+}

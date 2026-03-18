@@ -1,0 +1,15 @@
+# React Router
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    <FilesMatch "\.(webp|png)$">
+        ExpiresDefault "access plus 1 year"
+    </FilesMatch>
+</IfModule>
