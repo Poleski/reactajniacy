@@ -1,25 +1,6 @@
-import type { IContext } from "../models/context.models";
+import type { IContextTogglables } from "../models/context.models";
 
-export const getDefaultTheme = () => {
-    let defaultTheme: IContext["theme"] = window.matchMedia(
-        "(prefers-color-scheme: dark)",
-    ).matches
-        ? "dark"
-        : "light";
-    const savedTheme = localStorage.getItem("theme") as IContext["theme"];
-    if (savedTheme) {
-        defaultTheme = savedTheme;
-    }
-
-    return defaultTheme;
-};
-
-export const getDefaultLang = () => {
-    let defaultLang: IContext["lang"] = navigator.language.includes('pl') ? 'pl' : 'en';
-    const savedLang = localStorage.getItem("lang") as IContext["lang"];
-    if (savedLang) {
-        defaultLang = savedLang;
-    }
-
-    return defaultLang;
+export const getDefault = <T extends IContextTogglables, U extends keyof T>(toggle: U, initial: T[U]) => {
+    const saved = localStorage.getItem(toggle as string & U) as T[U];
+    return saved ?? initial;
 }

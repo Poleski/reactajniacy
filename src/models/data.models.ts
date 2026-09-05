@@ -1,9 +1,10 @@
-import type { languages, gameTypes, wordArrays } from '../data/data';
+import type { languages, gameTypes, wordArrays, gameTypesCoop } from '../data/data';
 
 export interface ILoaderParams {
     type: string;
     set: string;
     seed: string;
+    coop: boolean;
 }
 
 export interface IWordData {
@@ -11,42 +12,36 @@ export interface IWordData {
     en: string;
 }
 
-export interface IWordReadyData extends IWordData {
-    role: keyof Omit<ISchema, "random">;
-}
-
 export interface IImageData {
     fileName: string;
 }
 
-export interface IImageReadyData extends IImageData {
+export type IReadyData = (IWordData | IImageData) & {
     role: keyof Omit<ISchema, "random">;
+};
+
+export type IGuessedData = IReadyData & {
+    guessedBy: number;
 }
-
-export type IData = IWordData | IImageData
-
-export type IReadyData = IWordReadyData | IImageReadyData;
 
 export interface ISchema {
     red: number;
-    blue: number;
+    blue?: number;
     killer?: number;
     neutral?: number;
     green?: number;
     random?: 1 | 3;
 }
 
-export interface ISchemaDuet {
-    redBlue: number;
-    redNeutral: number;
-    redKiller: number;
-    blueNeutral: number;
-    blueKiller: number;
-    neutral: number;
-    neutralKiller: number;
-    killer: number;
+export type ICoopKeys = keyof Omit<ISchema, "green" | "blue" | "random">;
+export type ISchemaCoop = {
+    [key in `${ICoopKeys}_${ICoopKeys}`]?: number;
 }
-
+// export type ISchemaCoop = {
+//     [key in `${ICoopKeys}_${ICoopKeys}`]?: number;
+// } | {
+//     [key in `${ICoopKeys}_${ICoopKeys}_${ICoopKeys}`]?: number;
+// };
 export type ISchemaPlayersOnly = Omit<ISchema, "killer" | "neutral" | "random">;
 
 export interface IAllClicked {
@@ -58,6 +53,8 @@ export interface IMessages {
     bossGuess: IMessagesDetails;
     finished: IMessagesDetails;
     killerFound: IMessagesDetails;
+    finishedCoop: IMessagesDetails;
+    killerFoundCoop: IMessagesDetails;
     qrCode: IMessagesDetails;
     load: IMessagesDetails;
 }
@@ -68,12 +65,16 @@ export interface IMessagesDetails {
     confirm: IWordData;
     decline?: IWordData;
     picture_inject?: IWordData;
+    score?: IWordData;
 }
 
 export type IFormLabelsTypes = {
     [key in typeof gameTypes[number]]: string;
 } & {
+    [key in typeof gameTypesCoop[number]]: string;
+} & {
     topLabel: string;
+    coopLabel: string;
 };
 
 export type IFormLabelsSets = {
@@ -99,4 +100,22 @@ export interface ILabels {
 
 export type IDefaultSets = {
    [index in keyof IFormLabelsTypes]?: keyof IFormLabelsSets
+}
+
+export type IDataNormal = {
+    words: IReadyData[],
+    schemaMap: (keyof ISchema)[]
+}
+
+export type IDataCoop = {
+    words: IReadyData[][],
+    schemaMap: (keyof ISchema)[][]
+}
+
+export type IData = IDataNormal | IDataCoop
+
+export interface IFinishGameCoopProps {
+    guessed: number,
+    maxGuessed: number,
+    changeCount: number,
 }

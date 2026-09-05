@@ -1,29 +1,10 @@
-import type { Dispatch, SetStateAction } from "react";
-import type {
-    IAllClicked,
-    IReadyData,
-    ISchemaPlayersOnly
-} from "../models/data.models";
-
-type ISetActivePlayer = Dispatch<SetStateAction<number>>;
-type ISetScore = Dispatch<SetStateAction<ISchemaPlayersOnly>>;
-type ISetGuess = Dispatch<SetStateAction<IReadyData[][]>>;
-type ISetAllClicked = Dispatch<SetStateAction<IAllClicked>>;
-
-export interface IGameStateData {
-    activePlayer: number;
-    score: ISchemaPlayersOnly;
-    guesses: IReadyData[][];
-    allClicked: IAllClicked;
-}
-
-export type IGameStateDataFragment = Partial<IGameStateData>
+import type { Dispatch } from "react";
+import type { IGameStateData, IGameStateDataFragment } from "../models/board.models.ts";
 
 const emptyData: IGameStateData = {
     activePlayer: 0,
-    score: {red: 10, blue: 10},
-    guesses: [[], []],
-    allClicked: {},
+    guesses: [],
+    changeCount: 0,
 };
 
 export const getSaveGame = (id: string) => {
@@ -35,26 +16,26 @@ export const getSaveGame = (id: string) => {
         if (typeof data.activePlayer !== "undefined") {
             loadedData.activePlayer = data.activePlayer;
         }
-        if (data.score) {
-            loadedData.score = data.score;
-        }
         if (data.guesses) {
             loadedData.guesses = data.guesses;
         }
-        if (data.allClicked) {
-            loadedData.allClicked = data.allClicked;
+        if (data.changeCount) {
+            loadedData.changeCount = data.changeCount;
         }
+        console.log('saving!');
 
         localStorage.setItem(id, JSON.stringify(loadedData));
     };
 };
 
+type DispatchType<T> = {
+    type: keyof T;
+    payload: T[keyof T]
+}
+
 export const getLoadGame = (
-    setActivePlayer: ISetActivePlayer,
-    setScore: ISetScore,
-    setGuesses: ISetGuess,
-    setAllClicked: ISetAllClicked,
-    id: string,
+    dispatch: Dispatch<DispatchType<IGameStateData>>,
+    id: string
 ) => {
     return () => {
         const loadedDataRaw = localStorage.getItem(id);
@@ -64,9 +45,8 @@ export const getLoadGame = (
 
         const loadedData: IGameStateData = JSON.parse(loadedDataRaw);
 
-        setActivePlayer(loadedData.activePlayer);
-        setScore(loadedData.score);
-        setGuesses(loadedData.guesses);
-        setAllClicked(loadedData.allClicked);
+        dispatch({type: "activePlayer", payload: loadedData.activePlayer});
+        dispatch({type: "guesses", payload: loadedData.guesses});
+        dispatch({type: "changeCount", payload: loadedData.changeCount});
     };
 };

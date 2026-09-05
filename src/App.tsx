@@ -19,12 +19,22 @@ const router = createBrowserRouter([
             },
             {
                 path: "game/:type/:set/:seed",
-                element: <Board/>,
+                element: <Board coop={false} />,
                 loader,
             },
             {
                 path: "boss/:type/:set/:seed",
                 element: <BossBoard/>,
+                loader,
+            },
+            {
+                path: "coop/:type/:set/:seed",
+                element: <Board coop={true} />,
+                loader,
+            },
+            {
+                path: "bosscoop/:type/:set/:seed/:player",
+                element: <BossBoard />,
                 loader,
             },
         ],

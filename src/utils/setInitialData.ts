@@ -1,46 +1,48 @@
-import type { IAllClicked, IImageReadyData, ISchema, ISchemaPlayersOnly, IWordReadyData } from "../models/data.models";
+import type {
+    IGuessedData,
+    ISchema,
+    ISchemaPlayersOnly,
+} from "../models/data.models";
+import seedrandom from "seedrandom";
 
 const roles: Array<keyof ISchemaPlayersOnly> = ["red", "blue", "green"];
 
-export default function setInitialData(data: {
-    words: (IWordReadyData[] | IImageReadyData[]);
-    schemaMap: (keyof ISchema)[];
-}) {
-    const initialScore: ISchemaPlayersOnly = {red: 0, blue: 0};
-    const initialClicked: IAllClicked = {};
-    const initialGuesses: (IWordReadyData[] | IImageReadyData[])[] = [];
+export default function setInitialData(
+    schemaMap: (keyof ISchema)[] |(keyof ISchema)[][],
+    coop: boolean,
+    seed = 'error',
+) {
+    if (seed === "error") {
+        console.error('invalid seed!!!');
+    }
+    const initialScore: ISchemaPlayersOnly = {red: 0};
+    const initialGuesses: IGuessedData[] = [];
 
-    roles.forEach((role) => {
-        const count = data.schemaMap.filter(
-            (currentRole) => currentRole === role,
-        ).length;
-        if (count > 0) {
-            initialScore[role] = count;
-        }
-    });
+    if (!coop) {
+        roles.forEach((role) => {
+            const count = schemaMap.filter(
+                (currentRole) => currentRole === role,
+            ).length;
+            if (count > 0) {
+                initialScore[role] = count;
+            }
+        });
+    }
 
-    const initialPlayer = Object.values(initialScore).indexOf(
-        Math.max(...Object.values(initialScore)),
-    );
+    let initialPlayer: number;
 
-    data.words.forEach((word) => {
-        if ("fileName" in word) {
-            initialClicked[word.fileName] = false;
-        } else {
-            initialClicked[word.pl] = false;
-        }
-    });
-
-    (Object.keys(initialScore) as Array<keyof ISchemaPlayersOnly>).forEach(
-        () => {
-            initialGuesses.push([]);
-        },
-    );
+    if (coop && Array.isArray(schemaMap[0])) {
+        const rng: () => number = seedrandom(seed);
+        initialPlayer = Math.floor(rng() * schemaMap[0].length)
+    } else {
+        initialPlayer = Object.values(initialScore).indexOf(
+            Math.max(...Object.values(initialScore)),
+        );
+    }
 
     return {
         initialScore,
         initialPlayer,
-        initialClicked,
         initialGuesses,
     };
 }

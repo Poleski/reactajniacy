@@ -67,8 +67,8 @@ export const messages = {
             en: "Game Over!",
         },
         body: {
-            pl: "INJECT wygrywają, ponieważ ich przeciwnicy odkryli modercę!",
-            en: "INJECT wins, because their enemies found the killer agent!",
+            pl: "INJECT przegrywają, ponieważ ich odkryli modercę!",
+            en: "INJECT loses, because they found the killer agent!",
         },
         confirm: {
             pl: "Jeszcze raz!",
@@ -92,6 +92,46 @@ export const messages = {
             pl: "Zamknij",
             en: "Close",
         }
+    },
+    finishedCoop: {
+        heading: {
+            pl: "Koniec gry!",
+            en: "Game Over!",
+        },
+        body: {
+            pl: "Wygrywacie, ponieważ odnaleźliście wszystkich swoich agentów!",
+            en: "You found all your agents and are victorious!",
+        },
+        confirm: {
+            pl: "Jeszcze raz!",
+            en: "Again!",
+        },
+        decline: {
+            pl: "Zamknij",
+            en: "Close",
+        },
+        score: {
+            pl: "Znaleźliście INJECT1 agentów na INJECT2 możliwych. Zajęło wam to INJECT3 tur. Wasz wynik to INJECT4.",
+            en: "You found INJECT1 agents out of INJECT2 possible. It took you INJECT3 turns. Your final score is INJECT4."
+        }
+    },
+    killerFoundCoop: {
+        heading: {
+            pl: "Koniec gry!",
+            en: "Game Over!",
+        },
+        body: {
+            pl: "Przegrywacie, ponieważ odkryliście modercę!",
+            en: "You lose, because you found the killer agent!",
+        },
+        confirm: {
+            pl: "Jeszcze raz!",
+            en: "Again!",
+        },
+        decline: {
+            pl: "Zamknij",
+            en: "Close",
+        },
     },
     load: {
         heading: {

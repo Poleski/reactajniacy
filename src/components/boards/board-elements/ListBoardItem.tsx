@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import type { IImageReadyData, IReadyData, IWordReadyData } from "../../../models/data.models.ts";
+import type { IImageData, IReadyData, IWordData } from "../../../models/data.models.ts";
 import buttonize from "../../a11y/buttonize.ts";
 import MainContext from "../../Context";
 
@@ -9,7 +9,7 @@ interface IListBoardItemProps {
     onClick: (word: IReadyData) => void;
 }
 export default function ListBoardItem(props: React.PropsWithChildren<IListBoardItemProps>) {
-    const {lang, openModal} = useContext(MainContext);
+    const { lang, openModal} = useContext(MainContext);
     const [listItemClass, setListItemClass] = useState<string>("");
     const isImage = "fileName" in props.word;
 
@@ -32,7 +32,7 @@ export default function ListBoardItem(props: React.PropsWithChildren<IListBoardI
             setListItemClass("text-t-disabled picture:bg-t-picture-neutral rounded-xl");
         } else {
             if (props.word.role === "red") {
-                setListItemClass("text-t-light-red picture:bg-t-light-red rounded-xl");
+                setListItemClass("text-t-light-red picture:bg-t-light-red rounded-xl coop:text-t-light-coop picture:coop:bg-t-light-coop");
             } else if (props.word.role === "blue") {
                 setListItemClass("text-t-light-blue picture:bg-t-light-blue rounded-xl");
             } else if (props.word.role === "green") {
@@ -50,19 +50,19 @@ export default function ListBoardItem(props: React.PropsWithChildren<IListBoardI
     }, [props.clicked]);
 
     return (
-        <li className={`${isImage && "picture"}`}>
+        <li className={`${isImage ? "picture" : ""}`}>
             <button
                 className={`uppercase font-black text-center ${listItemClass} ${isImage ? "max-w-[20vw]" : ""}`}
                 {...buttonize(handleClick)}
             >
                 {!isImage && (
-                    <p>{(props.word as IWordReadyData)[lang]}</p>
+                    <p>{(props.word as IWordData)[lang]}</p>
                 )}
                 {isImage && (
                     <picture>
-                        <source srcSet={`/pictures/${(props.word as IImageReadyData).fileName}`}/>
-                        <img src={`/pictures/${(props.word as IImageReadyData).fileName}`}
-                             alt={(props.word as IImageReadyData).fileName}/>
+                        <source srcSet={`/pictures/${(props.word as IImageData).fileName}`}/>
+                        <img src={`/pictures/${(props.word as IImageData).fileName}`}
+                             alt={(props.word as IImageData).fileName}/>
                     </picture>
                 )}
             </button>

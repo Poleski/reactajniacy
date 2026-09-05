@@ -1,9 +1,11 @@
-import type { ISchema } from "../models/data.models";
+import type { IImageData, IReadyData, ISchema, IWordData } from "../models/data.models";
+import { shuffleArray } from "./shuffleArray.ts";
 
 export const getSchemaMap = (
     schema: ISchema,
     seedingFn: () => number,
-): string[] => {
+    fullSet: (IWordData | IImageData)[]
+) => {
     const schemaMap: Array<keyof ISchema> = [];
     const roles: Array<keyof ISchema> = [
         "killer",
@@ -44,5 +46,28 @@ export const getSchemaMap = (
         }
     }
 
-    return schemaMap;
+    const finalSet: IReadyData[] = [];
+    let newFullSet = [...fullSet];
+
+    while (finalSet.length < schemaMap.length) {
+        const newSelection: IReadyData = {
+            ...newFullSet[Math.floor(seedingFn() * newFullSet.length)],
+            role: schemaMap[finalSet.length] as keyof Omit<
+                ISchema,
+                "random"
+            >
+        };
+
+        finalSet.push(newSelection);
+        if ("fileName" in newSelection) {
+            newFullSet = newFullSet.filter((imageItem) => (imageItem as IImageData).fileName !== newSelection.fileName);
+        } else {
+            newFullSet = newFullSet.filter((wordItem) => (wordItem as IWordData).pl !== newSelection.pl);
+        }
+    }
+
+    return {
+        words: shuffleArray(seedingFn, finalSet),
+        schemaMap
+    };
 };

@@ -1,15 +1,18 @@
-import type { IContext } from "../models/context.models.ts";
+import type { IContext, IContextTogglables } from "../models/context.models.ts";
 import { createContext } from "react";
 
-const initialContext: IContext = {
+const initialTogglables: IContextTogglables = {
     theme: "light",
     lang: "pl",
     size: "normal",
-    bossView: "list",
+    bossView: "list"
+}
+
+const initialContext: IContext = {
+    ...initialTogglables,
     animationDelay: 500,
-    openModal: () => {
-    },
+    openModal: () => {}
 };
 
 const MainContext: React.Context<IContext> = createContext(initialContext);
-export default MainContext
+export default MainContext;

@@ -3,8 +3,8 @@ import { IoCloseSharp } from "react-icons/io5";
 import QRCode from "react-qr-code";
 import { motion } from 'motion/react';
 import { messages } from "../data/messages";
-import type { IModalData } from "../models/context.models";
-import type { IImageReadyData, IMessages, IMessagesDetails } from "../models/data.models";
+import type { ICoopForModal, IModalData } from "../models/context.models";
+import type { IImageData, IMessages, IMessagesDetails } from "../models/data.models";
 import buttonize from './a11y/buttonize';
 import MainContext from "./Context";
 
@@ -12,14 +12,15 @@ interface IModalProps {
     data: IModalData;
     open: boolean;
     setter: Dispatch<SetStateAction<boolean>>;
+    coop: ICoopForModal;
 }
 
 export default function Modal(props: React.PropsWithChildren<IModalProps>) {
-    const {lang, animationDelay} = useContext(MainContext);
+    const { lang, animationDelay } = useContext(MainContext);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const newMessages: IMessagesDetails = (messages as IMessages)[
         props.data.type
-        ];
+    ];
     const isImage = props.data.replacement && "fileName" in props.data.replacement;
     let replacement = "";
     if (props.data.replacement?.pl) {
@@ -52,9 +53,21 @@ export default function Modal(props: React.PropsWithChildren<IModalProps>) {
         modalClose();
     };
 
+    const handleClick = (e: MouseEvent) => {
+        if (dialogRef.current === e.target) {
+            handleDecline();
+        }
+    }
+
     useEffect(() => {
         if (props.open && dialogRef.current) {
             dialogRef.current.showModal();
+        }
+
+        document.addEventListener("mousedown", handleClick);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClick);
         }
     }, [props.open]);
 
@@ -83,21 +96,33 @@ export default function Modal(props: React.PropsWithChildren<IModalProps>) {
             <h2 className="font-bold text-2xl pb-2">
                 {newMessages.heading[lang]}
             </h2>
-            {props.data.type === "qrCode" && (
+            {props.data.type === "qrCode" && !props.coop && (
                 <QRCode
                     value={window.location.href.replace("/game/", "/boss/")}
                     className="m-auto pt-2 pb-2"
                 />
+            )}
+            {props.data.type === "qrCode" && props.coop && props.coop.length > 0 && (
+                <div className="flex">
+                    {props.coop.map((player, index) => {
+                        return (<QRCode
+                            value={window.location.href.replace("/game/", "/boss/") + index}
+                            className="m-auto pt-2 pb-2"
+                            fgColor={`var(--color-t-light-${player})`}
+                            key={player}
+                        />)
+                    })}
+                </div>
             )}
             {(props.data.type === "guess" || props.data.type === "bossGuess") && props.data.replacement?.fileName && (
                 <>
                     <div className="inline-block rounded-xl bg-t-picture-neutral">
                         <picture>
                             <source
-                                srcSet={`/pictures/${(props.data.replacement as IImageReadyData).fileName}`}/>
+                                srcSet={`/pictures/${(props.data.replacement as IImageData).fileName}`}/>
                             <img
-                                src={`/pictures/${(props.data.replacement as IImageReadyData).fileName}`}
-                                alt={(props.data.replacement as IImageReadyData).fileName}/>
+                                src={`/pictures/${(props.data.replacement as IImageData).fileName}`}
+                                alt={(props.data.replacement as IImageData).fileName}/>
                         </picture>
                     </div>
                     <p>
@@ -107,18 +132,25 @@ export default function Modal(props: React.PropsWithChildren<IModalProps>) {
                         )}
                     </p>
                 </>
-            )
-            }
-            {
-                props.data.type !== "qrCode" && !props.data.replacement?.fileName && (
+            )}
+            {props.data.type !== "qrCode" && !props.data.replacement?.fileName && (
                     <p>
                         {newMessages.body[lang].replace(
                             "INJECT",
                             replacement,
                         )}
                     </p>
-                )
-            }
+            )}
+            {props.data.type === "finishedCoop" && props.data.coopProps && (
+                <p>
+                    {newMessages.score?.[lang]
+                        .replace("INJECT1", String(props.data.coopProps.guessed))
+                        .replace("INJECT2", String(props.data.coopProps.maxGuessed))
+                        .replace("INJECT3", String(props.data.coopProps.changeCount))
+                        .replace("INJECT4", String(props.data.coopProps.guessed - props.data.coopProps.changeCount))
+                    }
+                </p>
+            )}
             <button
                 className="absolute top-1 right-1 dark:bg-t-dark p-1 text-2xl text-t-light-red cursor-pointer rounded-xl text-center transition-colors bg-t-light hover:text-black dark:hover:text-white "
                 {...buttonize(handleDecline)}

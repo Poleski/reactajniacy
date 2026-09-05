@@ -1,33 +1,42 @@
 import { useContext } from "react";
-import type { IAllClicked, IImageReadyData, IReadyData, IWordReadyData } from "../../../models/data.models.ts";
+import type { IGuessedData, IImageData, IReadyData, IWordData } from "../../../models/data.models.ts";
 import MainContext from "../../Context";
 import ListBoardItem from "./ListBoardItem.tsx";
+import getAllClicked from "../../../utils/getAllClicked.ts";
+import type { IContext } from "../../../models/context.models.ts";
 
 interface IListBoardProps {
     words: IReadyData[];
-    allClicked: IAllClicked;
+    guesses: IGuessedData[];
     onClick: (word: IReadyData) => void;
-    bossView: ("grid" | "list" | "both")
+    bossView: IContext["bossView"];
 }
 
 interface ISortedWords {
-    red?: IReadyData[];
-    blue?: IReadyData[];
-    green?: IReadyData[];
-    killer?: IReadyData[];
-    neutral?: IReadyData[];
+    red: IReadyData[];
+    blue: IReadyData[];
+    green: IReadyData[];
+    neutral: IReadyData[];
+    killer: IReadyData[];
 }
 
 export default function ListBoard(
     props: React.PropsWithChildren<IListBoardProps>,
 ) {
-    const {lang} = useContext(MainContext);
-    const sortedWords: ISortedWords = {};
+    const { lang } = useContext(MainContext);
+    const allClicked = getAllClicked(props.guesses);
+    const sortedWords: ISortedWords = {
+        red: [],
+        blue: [],
+        green: [],
+        neutral: [],
+        killer: []
+    };
+
     for (const word of props.words) {
-        if (typeof sortedWords[word.role] === "undefined") {
-            sortedWords[word.role] = [];
+        if (word.role in sortedWords) {
+            sortedWords[word.role as keyof Omit<ISortedWords, "npc">].push(word);
         }
-        sortedWords[word.role]?.push(word);
     }
 
     for (const key of Object.keys(sortedWords) as Array<keyof ISortedWords>) {
@@ -43,83 +52,37 @@ export default function ListBoard(
         });
     }
 
+    // true only for non-coop games
+    if (sortedWords.blue.length !== 0) {
+        sortedWords.neutral = [...sortedWords.killer, ...sortedWords.neutral];
+        sortedWords.killer = [];
+    }
+
     const handleClick = (word: IReadyData) => {
         props.onClick(word);
     };
 
     return (
         <div className={`flex justify-center ${props.bossView === "both" ? "" : "text-lg flex-wrap"}`}>
-            {sortedWords?.red && sortedWords.red.length > 0 && (
-                <ul className="px-4 pb-2 flex flex-col flex-wrap basis-0.4">
-                    {sortedWords.red.map((word) => {
-                        return (
-                            <ListBoardItem
-                                word={word}
-                                key={(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName}
-                                onClick={handleClick}
-                                clicked={props.allClicked[(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName]}
-                            />
-                        );
-                    })}
-                </ul>
-            )}
-            {sortedWords?.blue && sortedWords.blue.length > 0 && (
-                <ul className="px-4 pb-2 flex flex-col flex-wrap basis-0.4">
-                    {sortedWords.blue.map((word) => {
-                        return (
-                            <ListBoardItem
-                                word={word}
-                                key={(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName}
-                                onClick={handleClick}
-                                clicked={props.allClicked[(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName]}
-                            />
-                        );
-                    })}
-                </ul>
-            )}
-            {sortedWords?.green && sortedWords.green.length > 0 && (
-                <ul className="px-4 pb-2 flex flex-col flex-wrap basis-0.4">
-                    {sortedWords.green.map((word) => {
-                        return (
-                            <ListBoardItem
-                                word={word}
-                                key={(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName}
-                                onClick={handleClick}
-                                clicked={props.allClicked[(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName]}
-                            />
-                        );
-                    })}
-                </ul>
-            )}
-            {(sortedWords?.killer || sortedWords?.neutral) && (
-                <ul className="px-4 pb-2 flex flex-col flex-wrap basis-0.4">
-                    {sortedWords?.killer &&
-                        sortedWords.killer.length > 0 &&
-                        sortedWords.killer.map((word) => {
-                            return (
-                                <ListBoardItem
-                                    word={word}
-                                    key={(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName}
-                                    onClick={handleClick}
-                                    clicked={props.allClicked[(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName]}
-                                />
-                            );
-                        })}
-                    {sortedWords?.neutral &&
-                        sortedWords.neutral.length > 0 &&
-                        sortedWords.neutral.map((word) => {
-                            return (
-                                <ListBoardItem
-                                    word={word}
-                                    key={(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName}
-                                    onClick={handleClick}
-                                    clicked={props.allClicked[(word as IWordReadyData).pl ?? (word as IImageReadyData).fileName]}
-                                />
-                            );
-                        })}
-                </ul>
-            )}
+            {(Object.keys(sortedWords) as (keyof ISortedWords)[]).map((wordList) => (
+                <div key={wordList}>
+                    {sortedWords[wordList] && sortedWords[wordList].length > 0 && (
+                        <ul className="px-4 pb-2 flex flex-col flex-wrap">
+                            {sortedWords[wordList].map((word) => {
+                                return (
+                                    <ListBoardItem
+                                        word={word}
+                                        key={(word as IWordData).pl ?? (word as IImageData).fileName}
+                                        onClick={handleClick}
+                                        clicked={allClicked["pl" in word ? word.pl : word.fileName]}
+                                    />
+                                );
+                            })}
+                        </ul>
+                    )}
+                </div>
+            ))}
         </div>
-    );
+    )
 }
 

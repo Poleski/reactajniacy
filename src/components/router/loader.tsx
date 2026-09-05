@@ -1,20 +1,25 @@
 import type { LoaderFunctionArgs } from "react-router";
-import type { ILoaderParams, IReadyData } from "../../models/data.models";
+import type { ILoaderParams} from "../../models/data.models";
 import { getWords } from "../../utils/getWords";
 
 export async function loader({
+    request,
     params,
-}: LoaderFunctionArgs<ILoaderParams>): Promise<{
-    words: IReadyData[];
-    schemaMap: string[]
-} | undefined> {
+}: LoaderFunctionArgs<ILoaderParams>) {
     const {type, set, seed} = params;
+    const coop = request.url.includes('/coop/') || request.url.includes('/bosscoop/');
+
     if (!type || !set || !seed) {
         return;
     }
 
-    const data: { words: IReadyData[]; schemaMap: string[] } = await getWords(
-        {type, set, seed},
+    const data= await getWords(
+        {
+            type,
+            set,
+            seed,
+            coop
+        }
     );
 
     return await data;

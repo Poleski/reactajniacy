@@ -1,246 +1,120 @@
-import { type Dispatch, type SetStateAction, Suspense, useContext, useEffect, useMemo, useState, } from "react";
-import { Await, useLoaderData, useNavigate, useParams } from "react-router";
+import { Suspense, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { Await, useLoaderData, useOutletContext, useParams } from "react-router";
 import type {
-    IAllClicked,
-    IImageReadyData,
-    IMessages,
+    IData,
+    IDataCoop,
     IReadyData,
-    ISchema,
     ISchemaPlayersOnly,
-    IWordReadyData
 } from "../../models/data.models";
+import MainContext from "../Context";
+import { ScoreBoard } from "./board-elements/ScoreBoard.tsx";
+import WordBoard from "./board-elements/WordBoard.tsx";
+import BoardReducer from "../../state/BoardReducer.ts";
+import useHandleGuess from "./hooks/useHandleGuess.ts";
+import useHandleChangeActivePlayer from "./hooks/useHandleChangeActivePlayer.ts";
+import useHandleGuessWithModal from "./hooks/useHandleGuessWithModal.ts";
+import useFinishGame from "./hooks/useFinishGame.ts";
+import getScore from "../../utils/getScore.ts";
 import { getLoadGame, getSaveGame } from "../../utils/getSaveAndLoadGame";
 import setInitialData from "../../utils/setInitialData";
-import MainContext from "../Context";
-import ScoreBoard from "./board-elements/ScoreBoard.tsx";
-import WordBoard from "./board-elements/WordBoard.tsx";
+import getPlayerWords from "../../utils/getPlayerWords.ts";
+import type { IOutletContext } from "../../models/context.models.ts";
+import getMaxGuessed from "../../utils/getMaxGuessed.ts";
 
-interface IInitialData {
-    initialScore: ISchemaPlayersOnly;
-    initialPlayer: number;
-    initialGuesses: IReadyData[][];
-    initialClicked: IAllClicked;
+interface IBoardProps {
+    coop: boolean;
 }
 
-interface IFinishGameTypeReplacement {
-    pl: string[],
-    en: string[],
-    team: ("red" | "blue" | "green")[]
-}
-
-export default function Board() {
+export default function Board(
+    props: React.PropsWithChildren<IBoardProps>,
+) {
     // preparation
     const playerOrder: Array<keyof ISchemaPlayersOnly> = ["red", "blue"];
-    const {openModal, animationDelay} = useContext(MainContext);
-    const navigate = useNavigate();
-    const data: { words: IWordReadyData[]; schemaMap: (keyof ISchema)[] } =
-        useLoaderData();
-    const {initialScore, initialPlayer, initialGuesses, initialClicked} =
-        useMemo<IInitialData>(() => {
-            return setInitialData(data);
+    const { openModal } = useContext(MainContext);
+    const data: IData = useLoaderData();
+    const gameParams = useParams();
+    const outletContext = useOutletContext<IOutletContext>();
+
+    const {initialScore, initialPlayer, initialGuesses} =
+        useMemo(() => {
+            return setInitialData(data.schemaMap, props.coop, gameParams.seed);
         }, [data]);
 
     if (initialGuesses.length === 3) {
         playerOrder.push("green");
     }
 
-    // states
-    const [activePlayer, setActivePlayer] = useState(initialPlayer);
+    const [state, dispatch] = useReducer(BoardReducer, {
+        activePlayer: initialPlayer,
+        guesses: initialGuesses,
+        changeCount: 0,
+    });
+
+    const [words, setWords] = useState<IReadyData[]>(props.coop ? getPlayerWords(data as IDataCoop, initialPlayer) : [])
+    const [finished, setFinished] = useState(false);
     const [score, setScore] = useState(initialScore);
-    const [guesses, setGuesses] = useState(initialGuesses);
-    const [allClicked, setAllClicked] = useState(initialClicked);
 
     // save/load
-    const gameParams = useParams();
-    const gameStateId = [gameParams.type, gameParams.set, gameParams.seed].join(
+    let gameStateId = [gameParams.type, gameParams.set, gameParams.seed].join(
         "-",
     );
+    if (props.coop) {
+        gameStateId = `coop-${gameStateId}`;
+    }
     const saveGame = useMemo(() => {
         return getSaveGame(gameStateId);
     }, [gameStateId]);
     const loadGame = useMemo(() => {
         return getLoadGame(
-            setActivePlayer,
-            setScore,
-            setGuesses,
-            setAllClicked,
+            dispatch,
             gameStateId,
         );
     }, [gameStateId]);
 
-    // handlers
-    const handleChangeActivePlayer = (forcedActive?: number) => {
-        if (forcedActive) {
-            saveGame({activePlayer: forcedActive});
-            setActivePlayer(forcedActive);
-            return;
-        }
-
-        if (activePlayer === playerOrder.length - 1) {
-            saveGame({activePlayer: 0});
-            setActivePlayer(0);
-        } else {
-            setActivePlayer((prev) => {
-                saveGame({activePlayer: prev + 1});
-                return prev + 1;
-            });
-        }
-    };
-
-    const handleGuess = (guess: IReadyData) => {
-        setGuesses((prev) => {
-            const newGuesses = [...prev];
-            if (!newGuesses[activePlayer].includes(guess as IWordReadyData & IImageReadyData)) {
-                newGuesses[activePlayer].push(guess as IWordReadyData & IImageReadyData);
-            }
-            saveGame({guesses: newGuesses});
-            return newGuesses;
-        });
-
-        if (guess.role === "killer" || guess.role === "neutral") {
-            return;
-        }
-
-        if (playerOrder.includes(guess.role)) {
-            setScore((prev) => {
-                const newScore: ISchemaPlayersOnly = {...prev};
-                const role: keyof ISchemaPlayersOnly =
-                    guess.role as keyof ISchemaPlayersOnly;
-                if (newScore[role]) {
-                    newScore[role]--;
-                }
-
-                if (newScore[role] === 0) {
-                    handleChangeActivePlayer(playerOrder.indexOf(role));
-                    finishGame("finished");
-                }
-
-                saveGame({score: newScore});
-                return newScore;
-            });
-        }
-    };
-
-    const handleClickWithModal = (
-        guess: IReadyData,
-        setter?: Dispatch<SetStateAction<string>>,
-    ) => {
-        const type = "guess";
-        const replacement = guess;
-        const yesCallback = () => {
-            setAllClicked((prev) => {
-                const newClicked = {...prev};
-                if ("fileName" in guess) {
-                    newClicked[guess.fileName] = true;
-                } else {
-                    newClicked[guess.pl] = true;
-                }
-
-                saveGame({allClicked: newClicked});
-                return newClicked;
-            });
-            if (setter) {
-                setter("");
-            }
-            setTimeout(() => {
-                handleGuess(guess);
-                if (guess.role === "killer") {
-                    finishGame("killerFound");
-                } else if (guess.role !== playerOrder[activePlayer]) {
-                    handleChangeActivePlayer();
-                }
-            }, animationDelay)
-        };
-        const noCallback = () => {
-            if (setter) {
-                setter("");
-            }
-        };
-
-        openModal({type, replacement, yesCallback, noCallback});
-    };
-
-    const finishGame = (type: keyof IMessages) => {
-        const typeReplacement: IFinishGameTypeReplacement = {
-            pl: ["Czerwoni", "Niebiescy"],
-            en: ["Red team", "Blue team"],
-            team: ["red", "blue"]
-        };
-
-        if (playerOrder.length === 3) {
-            typeReplacement.pl.push("Zieloni");
-            typeReplacement.en.push("Green team")
-            typeReplacement.team.push("green")
-        }
-
-        if (type === "killerFound") {
-            typeReplacement.pl = typeReplacement.pl.filter((_x, index) => index !== activePlayer);
-            typeReplacement.en = typeReplacement.en.filter((_x, index) => index !== activePlayer);
-            typeReplacement.team = typeReplacement.team.filter((_x, index) => index !== activePlayer);
-        }
-
-        let replacement = {
-            pl: typeReplacement.pl[0],
-            en: typeReplacement.en[0],
-        };
-
-        if (typeReplacement.team.length > 1 && typeReplacement.team[0] && typeReplacement.team[1] && score.green) {
-
-            // code below could be made shorter, but since it's critical check, I've made it very readable
-            // ts incorrectly see "green" as possibly undefined, hence the assertion
-            if (score[typeReplacement.team[0] as ("red" | "blue")] > score[typeReplacement.team[1] as ("red" | "blue")]) {
-                replacement = {
-                    pl: typeReplacement.pl[1],
-                    en: typeReplacement.en[1],
-                };
-            } else if (score[typeReplacement.team[0] as ("red" | "blue")] < score[typeReplacement.team[1] as ("red" | "blue")]) {
-                replacement = {
-                    pl: typeReplacement.pl[0],
-                    en: typeReplacement.en[0],
-                };
-            } else {
-                replacement = {
-                    pl: "Obie pozostałe drużyny",
-                    en: "Both remaining teams",
-                };
-            }
-        }
-
-        const yesCallback = () => {
-            cleanup();
-            navigate(`/?prevType=${gameParams.type}&prevSets=${gameParams.set}`);
-        };
-
-        const noCallback = () => {
-        };
-
-        setAllClicked((prev) => {
-            const newClicked = {...prev};
-            for (const word of Object.keys(newClicked)) {
-                if (newClicked[word] === false) {
-                    newClicked[word] = null;
-                }
-            }
-            return newClicked;
-        });
-
-        setTimeout(() => {
-            openModal({type, replacement, yesCallback, noCallback});
-        }, 1000);
-    };
-
     const cleanup = () => {
-        setActivePlayer(initialPlayer);
-        setScore(initialScore);
-        setGuesses(initialGuesses);
-        setAllClicked(initialClicked);
+        dispatch({type: "activePlayer", payload: initialPlayer});
+        dispatch({type: "guesses", payload: initialGuesses});
+        dispatch({type: "changeCount", payload: 0});
+        setFinished(false)
     }
 
+    // handlers
+    const handleChangeActivePlayer = useHandleChangeActivePlayer({
+        state,
+        dispatch,
+        coop: props.coop,
+        playerOrder,
+        saveGame,
+        data: data as IDataCoop,
+        setWords
+    })
+
+    const handleGuess = useHandleGuess({
+        state,
+        dispatch,
+        coop: props.coop,
+        playerOrder,
+        saveGame,
+        handleChangeActivePlayer
+    })
+
+    const handleGuessWithModal = useHandleGuessWithModal({
+        handleGuess
+    })
+
+    const finishGame = useFinishGame({
+        coop: props.coop,
+        params: gameParams,
+        setFinished,
+        cleanup
+    })
+
+    // useEffects
     useEffect(() => {
         cleanup();
         const loadedDataRaw = localStorage.getItem(gameStateId);
         const loadedData = loadedDataRaw && JSON.parse(loadedDataRaw);
-        if (loadedData && loadedData.guesses.flat().length > 0) {
+        if (loadedData && loadedData.guesses.length > 0) {
             const type = "load";
             const replacement = {
                 pl: gameStateId,
@@ -248,16 +122,6 @@ export default function Board() {
             };
             const yesCallback = () => {
                 loadGame();
-                if (
-                    loadedData.guesses
-                        .flat()
-                        .find((word: IWordReadyData) => word.role === "killer")
-                ) {
-                    finishGame("killerFound");
-                } else if (Object.values(loadedData.score).includes(0)) {
-                    setActivePlayer(Object.values(loadedData.score).indexOf(0));
-                    finishGame("finished");
-                }
             };
             const noCallback = () => {
                 localStorage.removeItem(gameStateId);
@@ -267,36 +131,83 @@ export default function Board() {
         } else if (!loadedData) {
             openModal({type: "qrCode"});
             saveGame({
-                activePlayer,
-                score: initialScore,
-                guesses: initialGuesses,
-                allClicked: initialClicked,
+                activePlayer: state.activePlayer,
+                guesses: initialGuesses
             });
         }
 
+        outletContext.setCoop(props.coop && playerOrder);
+
         return cleanup;
     }, []);
+
+    useEffect(() => {
+        // killer check
+        const isKiller = state.guesses.find((guess) => guess.role === "killer");
+        if (isKiller) {
+            finishGame(isKiller.guessedBy, true);
+            return;
+        }
+
+        // score check
+        if (props.coop) {
+            const scoringGuesses = state.guesses.filter(guess => guess.role === 'red').length;
+            setScore({
+                red: scoringGuesses
+            });
+            const guessedWords = state.guesses.map((guess) => {
+                if ("pl" in guess) {
+                    return guess.pl
+                }
+                return guess.fileName
+            })
+            const availableToGuess = (data as IDataCoop).words.flat().filter(word => word.role === "red").filter(word => {
+                if ("pl" in word) {
+                    return !guessedWords.includes(word.pl)
+                }
+                return !guessedWords.includes(word.fileName)
+            })
+
+            if (availableToGuess.length === 0) {
+                finishGame(0, false, {
+                    guessed: state.guesses.filter(guess => guess.role === "red").length,
+                    maxGuessed: getMaxGuessed((data as IDataCoop).schemaMap),
+                    changeCount: state.changeCount + 1,
+                });
+            }
+        } else {
+            const updatedScore = getScore(initialScore as ISchemaPlayersOnly, state.guesses);
+            setScore(updatedScore);
+            const isWinner = Object.values(updatedScore).findIndex(score => score === 0);
+            if (isWinner > -1) {
+                finishGame(isWinner, false);
+            }
+        }
+
+    }, [state.guesses]);
 
     return (
         <Suspense fallback={<p>loading</p>}>
             <Await resolve={data}>
                 <div
-                    className={`game-container flex gap-8 ${activePlayer === 0 ? "active-red" : ""}${activePlayer === 1 ? "active-blue" : ""}${activePlayer === 2 ? "active-green" : ""}`}
+                    className={`game-container flex gap-8 ${state.activePlayer === 0 ? "active-red" : ""}${state.activePlayer === 1 ? "active-blue" : ""}${state.activePlayer === 2 ? "active-green" : ""} ${props.coop ? "coop" : ""}`}
                     role="application"
                 >
                     <ScoreBoard
-                        activePlayer={activePlayer}
-                        score={score}
-                        guesses={guesses}
+                        activePlayer={state.activePlayer}
+                        guesses={state.guesses}
                         playerOrder={playerOrder}
                         onChangeActivePlayer={() => {
                             handleChangeActivePlayer();
                         }}
+                        score={score}
+                        changeCount={state.changeCount}
                     />
                     <WordBoard
-                        words={data.words}
-                        onClick={handleClickWithModal}
-                        allClicked={allClicked}
+                        words={props.coop ? words : data.words as IReadyData[]}
+                        onClick={handleGuessWithModal}
+                        guesses={state.guesses}
+                        finished={finished}
                     />
                 </div>
             </Await>

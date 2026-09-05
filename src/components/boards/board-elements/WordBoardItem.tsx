@@ -1,7 +1,7 @@
 import { type Dispatch, type SetStateAction, useContext, useEffect, useState, } from "react";
 import { useLocation } from "react-router";
 import { motion } from 'motion/react';
-import type { IImageReadyData, IReadyData, IWordReadyData } from "../../../models/data.models.ts";
+import type { IImageData, IReadyData, IWordData } from "../../../models/data.models.ts";
 import MainContext from "../../Context";
 import buttonize from "../../a11y/buttonize.ts";
 
@@ -18,7 +18,7 @@ export default function WordBoardItem(props: React.PropsWithChildren<IWordBoardI
     const [itemClass, setItemClass] = useState<string>("");
     const [tempClass, setTempClass] = useState<string>("");
     const {pathname} = useLocation();
-    const isBoss = pathname.includes("/boss/");
+    const isBoss = pathname.includes("/boss/") || pathname.includes("/bosscoop/");
     const isImage = "fileName" in props.word;
 
     const handleClick = () => {
@@ -39,7 +39,7 @@ export default function WordBoardItem(props: React.PropsWithChildren<IWordBoardI
         // clicked item and regular item in the boss view
         if ((props.clicked && !isBoss) || (!props.clicked && isBoss)) {
             if (props.word.role === "red") {
-                setItemClass("clicked bg-t-light-red text-white border-black");
+                setItemClass("clicked bg-t-light-red text-white border-black coop:bg-t-light-coop");
             } else if (props.word.role === "blue") {
                 setItemClass("clicked bg-t-light-blue text-white border-black");
             } else if (props.word.role === "green") {
@@ -62,7 +62,7 @@ export default function WordBoardItem(props: React.PropsWithChildren<IWordBoardI
             // game is finished
         } else {
             if (props.word.role === "red") {
-                setItemClass("border-t-light-red");
+                setItemClass("border-t-light-red coop:border-t-light-coop");
             } else if (props.word.role === "blue") {
                 setItemClass("border-t-light-blue");
             } else if (props.word.role === "green") {
@@ -97,13 +97,13 @@ export default function WordBoardItem(props: React.PropsWithChildren<IWordBoardI
                 style={{transition: props.clicked ? `background ${animationDelay}ms ease ${animationDelay}ms, color ${animationDelay}ms ease ${animationDelay}ms, border ${animationDelay}ms ease ${animationDelay}ms, filter ${animationDelay}ms ease ${animationDelay}ms` : 'none'}}
             >
                 {!isImage && (
-                    <p>{(props.word as IWordReadyData)[lang]}</p>
+                    <p>{(props.word as IWordData)[lang]}</p>
                 )}
                 {isImage && (
                     <picture className="inline-block">
-                        <source src={`/pictures/${(props.word as IImageReadyData).fileName}`}/>
-                        <img src={`/pictures/${(props.word as IImageReadyData).fileName}`}
-                             className="scaleImage-4:max-h-[19vh] scaleImage-5:max-h-[14vh] scaleImage-6:max-h-[11vh]" alt={(props.word as IImageReadyData).fileName}/>
+                        <source src={`/pictures/${(props.word as IImageData).fileName}`}/>
+                        <img src={`/pictures/${(props.word as IImageData).fileName}`}
+                             className="scaleImage-4:max-h-[19vh] scaleImage-5:max-h-[14vh] scaleImage-6:max-h-[11vh]" alt={(props.word as IImageData).fileName}/>
                     </picture>
                 )}
             </button>

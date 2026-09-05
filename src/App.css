@@ -8,6 +8,10 @@
 @custom-variant scaleImage-4 (&:where(.scaleImage-4, .scaleImage-4 *));
 @custom-variant scaleImage-5 (&:where(.scaleImage-5, .scaleImage-5 *));
 @custom-variant scaleImage-6 (&:where(.scaleImage-6, .scaleImage-6 *));
+@custom-variant coop (&:where(.coop, .coop *));
+@custom-variant coopRed (&:where(.coop-red, .coop-red *));
+@custom-variant coopBlue (&:where(.coop-blue, .coop-blue *));
+@custom-variant coopGreen (&:where(.coop-green, .coop-green *));
 
 @source inline("grid-cols-4 grid-cols-5 grid-cols-6 grid-rows-4 grid-rows-5 grid-rows-6");
 
@@ -29,6 +33,14 @@
     --color-t-light-neutral: #f9f9b6;
     --color-t-picture-neutral: #f9f9f9;
     --color-t-disabled: #888;
+    --color-t-dark-coop: #606;
+    --color-t-light-coop: #c3c;
+    --color-t-light-coop-red: #ecc;
+    --color-t-light-coop-blue: #cce;
+    --color-t-light-coop-green: #cec;
+    --color-t-dark-coop-red: #551515;
+    --color-t-dark-coop-blue: #151555;
+    --color-t-dark-coop-green: #155515;
 
     --text-tiny: 0.625rem;
 
