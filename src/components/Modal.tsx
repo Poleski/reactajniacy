@@ -106,7 +106,7 @@ export default function Modal(props: React.PropsWithChildren<IModalProps>) {
                 <div className="flex">
                     {props.coop.map((player, index) => {
                         return (<QRCode
-                            value={window.location.href.replace("/game/", "/boss/") + index}
+                            value={window.location.href.replace("/coop/", "/bosscoop/") + "/" + index}
                             className="m-auto pt-2 pb-2"
                             fgColor={`var(--color-t-light-${player})`}
                             key={player}
